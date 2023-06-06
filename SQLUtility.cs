@@ -13,19 +13,35 @@ namespace CPUFramework
     {
         public static string ConnectionString = "";
         
-        public static DataTable GetDataTable(String sqlstatement) //- take a sql statement and return a DataTable
+        public static SqlCommand GetSQLCommand(string sprocname)
         {
+            SqlCommand cmd;
+            using (SqlConnection conn = new SqlConnection(SQLUtility.ConnectionString))
+            {
+                cmd = new SqlCommand(sprocname, conn);
+                cmd.CommandType = CommandType.StoredProcedure;
+                conn.Open();
+                SqlCommandBuilder.DeriveParameters(cmd);
+            }
+                return cmd;
+        }
+        public static DataTable GetDataTable(SqlCommand cmd)
+        {
+            Debug.Print("-----" + Environment.NewLine + cmd.CommandText);
             DataTable dt = new();
-            SqlConnection conn = new();
-            conn.ConnectionString = ConnectionString;
-            conn.Open();
-            var cmd = new SqlCommand();
-            cmd.Connection = conn;
-            cmd.CommandText = sqlstatement;
-            var dr = cmd.ExecuteReader();
-            dt.Load(dr);
+            using (SqlConnection conn = new SqlConnection(SQLUtility.ConnectionString))
+            {
+                conn.Open();
+                cmd.Connection = conn;
+                SqlDataReader dr = cmd.ExecuteReader();
+                dt.Load(dr);
+            }
             SetAllColumnsAllowNull(dt);
             return dt;
+        }
+        public static DataTable GetDataTable(String sqlstatement) //- take a sql statement and return a DataTable
+        {
+            return GetDataTable(new SqlCommand(sqlstatement));
         }
         public static void ExecuteSQL(string sqlstatement)
         {
