@@ -109,6 +109,20 @@ namespace CPUFramework
 
             return n;
         }
+        public static string GetFirstColumnFirstRowValueAsString(string sql)
+        {
+            string s = "";
+            DataTable dt = GetDataTable(sql);
+            if (dt.Rows.Count > 0 && dt.Columns.Count > 0)
+            {
+                if (dt.Rows[0][0] != DBNull.Value)
+                {
+                    s = dt.Rows[0][0].ToString();
+                }
+            }
+
+            return s;
+        }
         private static void SetAllColumnsAllowNull(DataTable dt)
         {
             foreach (DataColumn c in dt.Columns)
