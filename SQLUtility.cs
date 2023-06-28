@@ -80,7 +80,7 @@ namespace CPUFramework
                 msg = msg.Replace("\"", "'");
                 int pos = msg.IndexOf(prefix) + prefix.Length;
                 msg = msg.Substring(pos);
-                pos = msg.IndexOf("\"");
+                pos = msg.IndexOf("'");
                 if (pos == -1)
                 {
                     msg = origmsg;
