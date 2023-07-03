@@ -12,7 +12,7 @@ namespace CPUFramework
     public class SQLUtility
     {
         public static string ConnectionString = "";
-        
+
         public static SqlCommand GetSQLCommand(string sprocname)
         {
             SqlCommand cmd;
@@ -23,11 +23,15 @@ namespace CPUFramework
                 conn.Open();
                 SqlCommandBuilder.DeriveParameters(cmd);
             }
-                return cmd;
+            return cmd;
         }
         public static DataTable GetDataTable(SqlCommand cmd)
         {
-            
+            return DoExecuteSql(cmd, true);
+        }
+        private static DataTable DoExecuteSql(SqlCommand cmd, bool loadtable)
+        {
+
             DataTable dt = new();
             using (SqlConnection conn = new SqlConnection(SQLUtility.ConnectionString))
             {
@@ -37,26 +41,46 @@ namespace CPUFramework
                 try
                 {
                     SqlDataReader dr = cmd.ExecuteReader();
-                    dt.Load(dr);
+                    if (loadtable == true)
+                    {
+                        dt.Load(dr);
+                    }
                 }
                 catch (SqlException ex)
                 {
                     string msg = ParseConstraintMessage(ex.Message);
                     throw new Exception(msg);
-               
-                        
-                 }
+                }
+                catch (InvalidCastException ex)
+                {
+                    throw new Exception(cmd.CommandText + ": " + ex.Message, ex);
+                }
             }
             SetAllColumnsAllowNull(dt);
             return dt;
         }
         public static DataTable GetDataTable(String sqlstatement) //- take a sql statement and return a DataTable
         {
-            return GetDataTable(new SqlCommand(sqlstatement));
+            return DoExecuteSql(new SqlCommand(sqlstatement), true);
+        }
+        public static void ExecuteSQL(SqlCommand cmd)
+        {
+            DoExecuteSql(cmd, false);
         }
         public static void ExecuteSQL(string sqlstatement)
         {
             GetDataTable(sqlstatement);
+        }
+        public static void SetParamValue(SqlCommand cmd, string paraname, object value)
+        {
+            try
+            {
+                cmd.Parameters[paraname].Value = value;
+            }
+            catch(Exception ex)
+            {
+                throw new Exception(cmd.CommandText + ": "+ex.Message, ex);
+            }
         }
         private static string ParseConstraintMessage(string msg)
         {
@@ -90,6 +114,15 @@ namespace CPUFramework
                     msg = msg.Substring(0, pos);
                     msg = msg.Replace("_", " ");
                     msg = msg + msgend;
+
+                    if(prefix == "f_")
+                    {
+                        var words = msg.Split(" ");
+                        if (words.Length > 1)
+                        {
+                            msg = $"Cannot delete {words[0]} because it has related {words[1]} record.";
+                        }
+                    }
                 }
             }
             return msg;
@@ -101,7 +134,7 @@ namespace CPUFramework
             DataTable dt = GetDataTable(sql);
             if (dt.Rows.Count > 0 && dt.Columns.Count > 0)
             {
-                if(dt.Rows[0][0] != DBNull.Value)
+                if (dt.Rows[0][0] != DBNull.Value)
                 {
                     int.TryParse(dt.Rows[0][0].ToString(), out n);
                 }
@@ -138,7 +171,7 @@ namespace CPUFramework
             StringBuilder sb = new();
             if (cmd.Connection != null)
             {
-                sb.AppendLine($"--{ cmd.Connection.DataSource}");
+                sb.AppendLine($"--{cmd.Connection.DataSource}");
                 sb.AppendLine($"use {cmd.Connection.Database}");
                 sb.AppendLine("go");
             }
@@ -172,9 +205,9 @@ namespace CPUFramework
         }
         public static void DebugPrintDataTable(DataTable dt)
         {
-            foreach(DataRow r in dt.Rows)
+            foreach (DataRow r in dt.Rows)
             {
-                foreach(DataColumn c in dt.Columns)
+                foreach (DataColumn c in dt.Columns)
                 {
                     Debug.Print(c.ColumnName + " = " + r[c.ColumnName]);
                 }
