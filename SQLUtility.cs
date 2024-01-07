@@ -270,6 +270,20 @@ namespace CPUFramework
             }
             return value;
         }
+        public static string GetValueFromFirstRowAsStringFromDate(DataTable dt, string columnname)
+
+        {
+            string value = "";
+            if (dt.Rows.Count > 0)
+            {
+                DataRow r = dt.Rows[0];
+                if (r[columnname] != null && r[columnname] is DateTime)
+                {
+                    value = r[columnname].ToString();
+                }
+            }
+            return value;
+        }
         public static bool TableHasChanges(DataTable dt)
         {
             bool b = false;
